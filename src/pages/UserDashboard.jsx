@@ -108,7 +108,6 @@ const UserDashboard = () => {
               attribution="© OpenStreetMap contributors"
             />
 
-            {/* Example marker (HQ / City center) */}
             <Marker position={mapCenter} />
           </MapContainer>
 

@@ -1,68 +1,67 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { useSelector } from "react-redux";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import api from "../axios";
 
+/* =====================================================
+   AGENT DASHBOARD (PRO VERSION)
+===================================================== */
 const AgentDashboard = () => {
   const { token } = useSelector((state) => state.user);
 
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ================= LOAD ASSIGNED PARCELS =================
+  /* ================= LOAD ASSIGNED PARCELS ================= */
   useEffect(() => {
+    if (!token) return;
+
     const fetchMyJobs = async () => {
       try {
-        const res = await axios.get(
-          "http://localhost:3000/api/v1/agent/my-jobs",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
+        const res = await api.get("/api/v1/agent/my-jobs");
         setJobs(res.data.data || []);
-      } catch  {
+      } catch (err) {
+        console.error(err);
         toast.error("Failed to load assigned parcels");
       } finally {
         setLoading(false);
       }
     };
 
-    if (token) fetchMyJobs();
+    fetchMyJobs();
   }, [token]);
 
-  // ================= LIVE LOCATION TRACKING =================
+  /* ================= LIVE LOCATION TRACKING ================= */
   useEffect(() => {
     if (!token || jobs.length === 0) return;
 
-    // ✅ Only track active parcel
+    // 🔥 Only track active parcel
     const activeJob = jobs.find(
       (j) => j.status === "picked_up" || j.status === "in_transit"
     );
 
     if (!activeJob) return;
 
+    if (!navigator.geolocation) {
+      toast.error("Geolocation not supported");
+      return;
+    }
+
     const watchId = navigator.geolocation.watchPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
 
         try {
-          await axios.post(
-            "http://localhost:3000/api/v1/agent/update-location",
-            {
-              parcelId: activeJob._id,
-              lat: latitude,
-              lng: longitude,
-            },
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
+          await api.post("/api/v1/agent/update-location", {
+            parcelId: activeJob._id,
+            lat: latitude,
+            lng: longitude,
+          });
 
           console.log("📍 Location sent:", latitude, longitude);
-        } catch  {
-          console.error("Location send failed");
+        } catch (err) {
+          console.error(err);
         }
       },
       (err) => {
@@ -74,14 +73,13 @@ const AgentDashboard = () => {
     return () => navigator.geolocation.clearWatch(watchId);
   }, [jobs, token]);
 
-  // ================= UPDATE STATUS =================
+  /* ================= UPDATE STATUS ================= */
   const handleStatusChange = async (parcelId, status) => {
     try {
-      await axios.put(
-        "http://localhost:3000/api/v1/agent/update-status",
-        { parcelId, status },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.put("/api/v1/agent/update-status", {
+        parcelId,
+        status,
+      });
 
       toast.success("Status updated");
 
@@ -90,12 +88,13 @@ const AgentDashboard = () => {
           job._id === parcelId ? { ...job, status } : job
         )
       );
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error("Status update failed");
     }
   };
 
-  // ================= LOADING =================
+  /* ================= LOADING ================= */
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center font-bold">
@@ -104,6 +103,7 @@ const AgentDashboard = () => {
     );
   }
 
+  /* ================= UI ================= */
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <ToastContainer position="top-center" />

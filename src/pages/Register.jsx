@@ -19,10 +19,11 @@ const Register = () => {
     confirmPassword: "",
   });
 
+  /* ================= HANDLE CHANGE ================= */
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // ================= REGISTER =================
+  /* ================= REGISTER ================= */
   const handleRegister = async (e) => {
     e.preventDefault();
 
@@ -35,7 +36,7 @@ const Register = () => {
       const { confirmPassword, ...payload } = formData;
 
       const res = await axios.post(
-        "http://localhost:3000/api/v1/authentication/registration",
+        `${import.meta.env.VITE_API_BASE_URL}/api/v1/authentication/registration`,
         payload
       );
 
@@ -45,31 +46,36 @@ const Register = () => {
       } else {
         toast.error(res.data.error || "Registration failed");
       }
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error("Server error");
     } finally {
       setLoading(false);
     }
   };
 
-  // ================= VERIFY OTP =================
+  /* ================= VERIFY OTP ================= */
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       const res = await axios.post(
-        "http://localhost:3000/api/v1/authentication/verifybyotp",
-        { email: formData.email, otp }
+        `${import.meta.env.VITE_API_BASE_URL}/api/v1/authentication/verifybyotp`,
+        {
+          email: formData.email,
+          otp,
+        }
       );
 
       if (res.data.success) {
-        toast.success("Account verified");
+        toast.success("Account verified successfully");
         setTimeout(() => navigate("/login"), 1500);
       } else {
         toast.error("Invalid OTP");
       }
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error("OTP verification failed");
     } finally {
       setLoading(false);
@@ -151,7 +157,7 @@ const Register = () => {
               disabled={loading}
               className="w-full py-2.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-500 transition disabled:bg-blue-300"
             >
-              {loading ? "Creating..." : "Register"}
+              {loading ? "Creating Account..." : "Register"}
             </button>
           </form>
         )}
@@ -186,7 +192,7 @@ const Register = () => {
         </p>
       </div>
 
-      {/* Tailwind input style */}
+      {/* ================= INPUT STYLE ================= */}
       <style>{`
         .input {
           width: 100%;

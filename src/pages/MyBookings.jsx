@@ -36,7 +36,7 @@ const MyBookings = () => {
 
   /* ================= LOAD GOOGLE MAP ================= */
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyC0YWy3UUuvpwDX3WtzQQtM_00Si2DZuFo",
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries: ["places"],
   });
 
@@ -47,7 +47,7 @@ const MyBookings = () => {
     const loadParcels = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:3000/api/v1/customer/my-parcels",
+          `${import.meta.env.VITE_API_BASE_URL}/api/v1/customer/my-parcels`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -68,14 +68,10 @@ const MyBookings = () => {
   useEffect(() => {
     if (!currentUser?._id) return;
 
-    // ✅ Join customer room
     const roomId = `customer_${currentUser._id}`;
     socket.emit("join-room", roomId);
-    console.log("👤 Joined room:", roomId);
 
-    // ✅ Parcel status update
     socket.on("parcel-status-updated", (data) => {
-      console.log("📦 Status updated:", data);
       setParcels((prev) =>
         prev.map((p) =>
           p._id === data.parcelId ? { ...p, status: data.status } : p
@@ -83,18 +79,13 @@ const MyBookings = () => {
       );
     });
 
-    // ✅ Live agent location
     socket.on("parcel-location-updated", (data) => {
-      console.log("📍 Location updated:", data);
       setParcels((prev) =>
         prev.map((p) =>
           p._id === data.parcelId
             ? {
                 ...p,
-                liveLocation: {
-                  lat: data.lat,
-                  lng: data.lng,
-                },
+                liveLocation: { lat: data.lat, lng: data.lng },
               }
             : p
         )
@@ -125,8 +116,6 @@ const MyBookings = () => {
             ...prev,
             [parcel._id]: result,
           }));
-        } else {
-          console.error("Direction request failed:", status);
         }
       }
     );
@@ -160,10 +149,12 @@ const MyBookings = () => {
                 key={p._id}
                 className="bg-white rounded-xl shadow p-6 space-y-4"
               >
-                {/* ================= HEADER ================= */}
+                {/* HEADER */}
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-lg font-semibold">{p.recipientName}</p>
+                    <p className="text-lg font-semibold">
+                      {p.recipientName}
+                    </p>
                     <p className="text-sm text-gray-500">
                       {p.recipientAddress}
                     </p>
@@ -172,7 +163,7 @@ const MyBookings = () => {
                   <StatusBadge status={p.status} />
                 </div>
 
-                {/* ================= RIDER ================= */}
+                {/* RIDER */}
                 <p className="text-sm text-gray-600">
                   🚚 Rider:{" "}
                   {p.deliveryManId
@@ -180,7 +171,7 @@ const MyBookings = () => {
                     : "Not Assigned"}
                 </p>
 
-                {/* ================= MAP ================= */}
+                {/* MAP */}
                 <div className="relative">
                   <GoogleMap
                     mapContainerStyle={containerStyle}
@@ -194,7 +185,6 @@ const MyBookings = () => {
                       fullscreenControl: true,
                     }}
                   >
-                    {/* Agent Marker */}
                     {p.liveLocation && (
                       <Marker
                         position={p.liveLocation}
@@ -204,7 +194,6 @@ const MyBookings = () => {
                       />
                     )}
 
-                    {/* Route */}
                     {directions[p._id] && (
                       <DirectionsRenderer
                         directions={directions[p._id]}
@@ -242,9 +231,7 @@ const MyBookings = () => {
 
 export default MyBookings;
 
-/* =====================================================
-   STATUS BADGE (REUSABLE)
-===================================================== */
+/* ================= STATUS BADGE ================= */
 const StatusBadge = ({ status }) => {
   const map = {
     pending: "bg-yellow-100 text-yellow-700",

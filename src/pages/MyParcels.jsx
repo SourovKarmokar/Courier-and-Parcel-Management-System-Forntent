@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import axios from "axios";
 import socket from "../socket";
 
+/* ================= STATUS BADGE ================= */
 const StatusBadge = ({ status }) => {
   const styles = {
     pending: "bg-yellow-100 text-yellow-700",
@@ -24,26 +25,31 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+/* =====================================================
+   CUSTOMER – MY PARCEL LIST
+===================================================== */
 const MyParcels = () => {
   const { token } = useSelector((state) => state.user);
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ================= LOAD PARCELS =================
+  /* ================= LOAD PARCELS ================= */
   useEffect(() => {
     if (!token) return;
 
     const loadOrders = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:3000/api/v1/customer/my-parcels",
+          `${import.meta.env.VITE_API_BASE_URL}/api/v1/customer/my-parcels`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
+
         setOrders(res.data.data || []);
       } catch (err) {
-        console.error("Failed to load parcels", err);
+        console.error("❌ Failed to load parcels", err);
       } finally {
         setLoading(false);
       }
@@ -52,7 +58,7 @@ const MyParcels = () => {
     loadOrders();
   }, [token]);
 
-  // ================= REALTIME UPDATE =================
+  /* ================= REALTIME STATUS UPDATE ================= */
   useEffect(() => {
     socket.on("parcel-status-updated", (data) => {
       setOrders((prev) =>
@@ -64,9 +70,12 @@ const MyParcels = () => {
       );
     });
 
-    return () => socket.off("parcel-status-updated");
+    return () => {
+      socket.off("parcel-status-updated");
+    };
   }, []);
 
+  /* ================= LOADING ================= */
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
@@ -75,6 +84,7 @@ const MyParcels = () => {
     );
   }
 
+  /* ================= UI ================= */
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-7xl mx-auto">

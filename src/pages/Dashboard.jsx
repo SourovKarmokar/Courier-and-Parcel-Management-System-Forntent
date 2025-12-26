@@ -6,10 +6,13 @@ import AdminDashboard from "./AdminDashboard";
 import UserDashboard from "./UserDashboard";
 import AgentDashboard from "./AgentDashboard";
 
+/* =====================================================
+   MAIN DASHBOARD ROUTER (ROLE BASED)
+===================================================== */
 const Dashboard = () => {
   const { currentUser, token } = useSelector((state) => state.user);
 
-  // 🔐 Not logged in
+  // 🔐 If not logged in → redirect to login
   if (!token || !currentUser) {
     return <Navigate to="/login" replace />;
   }
@@ -18,12 +21,12 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* ===== HEADER ===== */}
+      {/* ================= HEADER ================= */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-xl font-bold text-gray-800">
-              Courier Management System
+              Courier & Parcel Management System
             </h1>
             <p className="text-sm text-gray-500">
               Welcome, {currentUser.firstName}
@@ -45,11 +48,18 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* ===== CONTENT ===== */}
+      {/* ================= CONTENT ================= */}
       <main className="max-w-7xl mx-auto px-4 py-8">
         {role === "admin" && <AdminDashboard />}
         {role === "customer" && <UserDashboard />}
         {role === "agent" && <AgentDashboard />}
+
+        {/* Safety fallback */}
+        {!["admin", "customer", "agent"].includes(role) && (
+          <div className="text-center text-red-600 font-semibold mt-20">
+            Access Denied: Invalid Role
+          </div>
+        )}
       </main>
     </div>
   );

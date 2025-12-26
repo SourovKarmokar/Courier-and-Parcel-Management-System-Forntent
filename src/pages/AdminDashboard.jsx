@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { logout } from "../redux/userSlice";
+import api from "../axios";
 
 /* ===== Recharts ===== */
 import {
@@ -38,15 +38,9 @@ const AdminDashboard = () => {
     const loadData = async () => {
       try {
         const [parcelRes, agentRes, userRes] = await Promise.all([
-          axios.get("http://localhost:3000/api/v1/admin/parcels", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get("http://localhost:3000/api/v1/admin/agents", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get("http://localhost:3000/api/v1/admin/users", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          api.get("/api/v1/admin/parcels"),
+          api.get("/api/v1/admin/agents"),
+          api.get("/api/v1/admin/users"),
         ]);
 
         setParcels(parcelRes.data || []);
@@ -66,11 +60,10 @@ const AdminDashboard = () => {
   const handleAssignAgent = async (parcelId, agentId) => {
     if (!agentId) return;
 
-    await axios.put(
-      "http://localhost:3000/api/v1/admin/assign-agent",
-      { parcelId, agentId },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    await api.put("/api/v1/admin/assign-agent", {
+      parcelId,
+      agentId,
+    });
 
     setParcels((prev) =>
       prev.map((p) =>
@@ -89,11 +82,7 @@ const AdminDashboard = () => {
   const handleDeleteUser = async (id) => {
     if (!window.confirm("Delete this user?")) return;
 
-    await axios.delete(
-      `http://localhost:3000/api/v1/admin/users/${id}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
+    await api.delete(`/api/v1/admin/users/${id}`);
     setUsers((prev) => prev.filter((u) => u._id !== id));
   };
 
@@ -101,13 +90,10 @@ const AdminDashboard = () => {
   const handleExport = async (type) => {
     const url =
       type === "csv"
-        ? "http://localhost:3000/api/v1/admin/export/csv"
-        : "http://localhost:3000/api/v1/admin/export/pdf";
+        ? "/api/v1/admin/export/csv"
+        : "/api/v1/admin/export/pdf";
 
-    const res = await axios.get(url, {
-      headers: { Authorization: `Bearer ${token}` },
-      responseType: "blob",
-    });
+    const res = await api.get(url, { responseType: "blob" });
 
     const blob = new Blob([res.data]);
     const link = document.createElement("a");
@@ -132,9 +118,21 @@ const AdminDashboard = () => {
         <h2 className="text-2xl font-bold mb-10">🚚 Admin Panel</h2>
 
         <ul className="space-y-3 flex-1">
-          <SidebarItem label="📊 Reports" active={activeTab === "reports"} onClick={() => setActiveTab("reports")} />
-          <SidebarItem label="📦 Parcels" active={activeTab === "parcels"} onClick={() => setActiveTab("parcels")} />
-          <SidebarItem label="👥 Users" active={activeTab === "users"} onClick={() => setActiveTab("users")} />
+          <SidebarItem
+            label="📊 Reports"
+            active={activeTab === "reports"}
+            onClick={() => setActiveTab("reports")}
+          />
+          <SidebarItem
+            label="📦 Parcels"
+            active={activeTab === "parcels"}
+            onClick={() => setActiveTab("parcels")}
+          />
+          <SidebarItem
+            label="👥 Users"
+            active={activeTab === "users"}
+            onClick={() => setActiveTab("users")}
+          />
         </ul>
 
         <button
@@ -155,7 +153,11 @@ const AdminDashboard = () => {
         )}
 
         {activeTab === "parcels" && (
-          <ParcelsTab parcels={parcels} agents={agents} onAssign={handleAssignAgent} />
+          <ParcelsTab
+            parcels={parcels}
+            agents={agents}
+            onAssign={handleAssignAgent}
+          />
         )}
 
         {activeTab === "users" && (
@@ -174,8 +176,11 @@ export default AdminDashboard;
 const SidebarItem = ({ label, active, onClick }) => (
   <li
     onClick={onClick}
-    className={`cursor-pointer px-4 py-2 rounded transition
-      ${active ? "bg-slate-700 text-white" : "text-gray-300 hover:bg-slate-800"}`}
+    className={`cursor-pointer px-4 py-2 rounded transition ${
+      active
+        ? "bg-slate-700 text-white"
+        : "text-gray-300 hover:bg-slate-800"
+    }`}
   >
     {label}
   </li>
@@ -194,50 +199,40 @@ const ReportsTab = ({ parcels, onExport }) => {
     0
   );
 
-  /* ===== Chart Data ===== */
   const statusData = [
     { name: "Delivered", value: delivered },
     { name: "Pending", value: pending },
     { name: "Others", value: totalParcels - delivered - pending },
   ];
 
-  const amountData = [
-    { name: "Revenue", amount: totalAmount },
-  ];
-
+  const amountData = [{ name: "Revenue", amount: totalAmount }];
   const COLORS = ["#22c55e", "#facc15", "#94a3b8"];
 
   return (
     <>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">📊 Business Reports</h1>
-
         <div className="flex gap-3">
-          <button onClick={() => onExport("csv")} className="bg-green-600 text-white px-4 py-2 rounded">
+          <button
+            onClick={() => onExport("csv")}
+            className="bg-green-600 text-white px-4 py-2 rounded"
+          >
             Export CSV
           </button>
-          <button onClick={() => onExport("pdf")} className="bg-red-600 text-white px-4 py-2 rounded">
+          <button
+            onClick={() => onExport("pdf")}
+            className="bg-red-600 text-white px-4 py-2 rounded"
+          >
             Export PDF
           </button>
         </div>
       </div>
 
-      {/* ===== SUMMARY CARDS ===== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <ReportCard title="Total Parcels" value={totalParcels} />
-        <ReportCard title="Delivered" value={delivered} />
-        <ReportCard title="Pending" value={pending} />
-        <ReportCard title="💰 Total Amount" value={`${totalAmount} Tk`} />
-      </div>
-
-      {/* ===== CHARTS ===== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* PIE CHART */}
         <div className="bg-white p-6 rounded shadow">
-          <h2 className="font-semibold mb-4">Parcel Status Distribution</h2>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
-              <Pie data={statusData} dataKey="value" nameKey="name" label>
+              <Pie data={statusData} dataKey="value" label>
                 {statusData.map((_, i) => (
                   <Cell key={i} fill={COLORS[i]} />
                 ))}
@@ -247,9 +242,7 @@ const ReportsTab = ({ parcels, onExport }) => {
           </ResponsiveContainer>
         </div>
 
-        {/* BAR CHART */}
         <div className="bg-white p-6 rounded shadow">
-          <h2 className="font-semibold mb-4">Revenue Overview</h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={amountData}>
               <XAxis dataKey="name" />
@@ -263,16 +256,6 @@ const ReportsTab = ({ parcels, onExport }) => {
     </>
   );
 };
-
-/* =====================================================
-   REPORT CARD
-===================================================== */
-const ReportCard = ({ title, value }) => (
-  <div className="bg-white rounded-xl shadow p-6">
-    <p className="text-sm text-gray-500">{title}</p>
-    <p className="text-3xl font-bold mt-2">{value}</p>
-  </div>
-);
 
 /* =====================================================
    PARCELS TAB
@@ -342,14 +325,19 @@ const UsersTab = ({ users, onDelete }) => (
         <tbody className="divide-y">
           {users.map((u) => (
             <tr key={u._id}>
-              <td className="p-4">{u.firstName} {u.lastName}</td>
+              <td className="p-4">
+                {u.firstName} {u.lastName}
+              </td>
               <td className="p-4">{u.email}</td>
               <td className="p-4 capitalize">{u.role}</td>
               <td className="p-4">
                 {u.role === "admin" ? (
                   <span className="text-gray-400">Protected</span>
                 ) : (
-                  <button onClick={() => onDelete(u._id)} className="text-red-600">
+                  <button
+                    onClick={() => onDelete(u._id)}
+                    className="text-red-600"
+                  >
                     Delete
                   </button>
                 )}

@@ -16,7 +16,7 @@ const UsersTab = () => {
     const loadUsers = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:3000/api/v1/admin/users",
+          `${import.meta.env.VITE_API_BASE_URL}/api/v1/admin/users`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -61,13 +61,13 @@ const UsersTab = () => {
   const handleRoleChange = async (id, role) => {
     try {
       await axios.put(
-        `http://localhost:3000/api/v1/admin/users/${id}/role`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/v1/admin/users/${id}/role`,
         { role },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      // ❌ UI update এখানে করবো না → socket করবে
+      // ❌ UI update socket করবে
     } catch (err) {
       console.error("Role update failed", err);
     }
@@ -81,7 +81,7 @@ const UsersTab = () => {
 
     try {
       await axios.delete(
-        `http://localhost:3000/api/v1/admin/users/${id}`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/v1/admin/users/${id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
